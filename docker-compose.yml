@@ -1,0 +1,43 @@
+version: "3.8"
+services:
+  panel:
+    build: .
+    image: arb-panel:latest
+    container_name: arb-panel
+    ports:
+      - "8000:8000"
+    environment:
+      - ARB_DB_PATH=/data/arb.db
+      - LIGHTER_HOST=${LIGHTER_HOST:-https://mainnet.zklighter.elliot.ai}
+      - ASTER_HOST=${ASTER_HOST:-https://fapi.asterdex.com}
+    volumes:
+      - type: bind
+        source: .
+        target: /app
+      - type: volume
+        source: arb_data
+        target: /data
+    restart: unless-stopped
+
+  runner:
+    build: .
+    image: arb-panel:latest
+    container_name: arb-runner
+    environment:
+      - ARB_DB_PATH=/data/arb.db
+      - LIGHTER_HOST=${LIGHTER_HOST:-https://mainnet.zklighter.elliot.ai}
+      - ASTER_HOST=${ASTER_HOST:-https://fapi.asterdex.com}
+      - PANEL_INGEST_URL=http://panel:8000/api/ingest/spread
+      - PANEL_ADMIN_URL=http://panel:8000/api/admin/config
+    command: ["python", "-m", "arb.runner_reminder"]
+    depends_on:
+      - panel
+    volumes:
+      - type: bind
+        source: .
+        target: /app
+    restart: unless-stopped
+
+volumes:
+  arb_data:
+    name: arb_data

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin - Rate Limits</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Rate Limits 管理</h1>
+      <div class="toolbar">
+        <a href="/">返回面板</a>
+        <button id="save">保存</button>
+        <span id="status"></span>
+      </div>
+    </header>
+    <main>
+      <pre class="muted">说明：配置每个交易所的 token bucket（capacity 最大令牌数，refill 每秒补充）。global 为默认桶，可为特定端点（如 depth）单独设置。</pre>
+      <div class="meta">
+        <div class="meta-col">
+          <h3>lighter</h3>
+          <label>global.capacity <input id="lighter-global-cap" type="number" value="20"></label>
+          <label>global.refill <input id="lighter-global-ref" type="number" step="0.1" value="10.0"></label>
+        </div>
+        <div class="meta-col">
+          <h3>aster</h3>
+          <label>global.capacity <input id="aster-global-cap" type="number" value="20"></label>
+          <label>global.refill <input id="aster-global-ref" type="number" step="0.1" value="10.0"></label>
+          <label>depth.capacity <input id="aster-depth-cap" type="number" value="10"></label>
+          <label>depth.refill <input id="aster-depth-ref" type="number" step="0.1" value="5.0"></label>
+        </div>
+      </div>
+    </main>
+    <script>
+      const status = document.getElementById('status')
+      async function load(){
+        const r = await fetch('/api/admin/config'); const cfg = await r.json()
+        const rl = cfg.ratelimits || {}
+        const lg = (rl.lighter||{}).global || {capacity:20, refill:10}
+        const ag = (rl.aster||{}).global || {capacity:20, refill:10}
+        const ad = (rl.aster||{}).depth || {capacity:10, refill:5}
+        document.getElementById('lighter-global-cap').value = lg.capacity
+        document.getElementById('lighter-global-ref').value = lg.refill
+        document.getElementById('aster-global-cap').value = ag.capacity
+        document.getElementById('aster-global-ref').value = ag.refill
+        document.getElementById('aster-depth-cap').value = ad.capacity
+        document.getElementById('aster-depth-ref').value = ad.refill
+      }
+      async function save(){
+        const payload = { ratelimits: {
+          lighter: { global: { capacity: Number(document.getElementById('lighter-global-cap').value||20), refill: Number(document.getElementById('lighter-global-ref').value||10) }},
+          aster: { global: { capacity: Number(document.getElementById('aster-global-cap').value||20), refill: Number(document.getElementById('aster-global-ref').value||10) }, depth: { capacity: Number(document.getElementById('aster-depth-cap').value||10), refill: Number(document.getElementById('aster-depth-ref').value||5) } }
+        } }
+        const r = await fetch('/api/admin/config', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)})
+        status.textContent = r.ok ? '已保存' : '保存失败'
+      }
+      document.getElementById('save').addEventListener('click', save)
+      load()
+    </script>
+  </body>
+  </html>
+

@@ -69,3 +69,8 @@ openapi-generator-cli.jar
 .idea
 
 examples/secrets.py
+
+# Local environment files (do not commit secrets)
+.env
+*.env
+arb/.env
